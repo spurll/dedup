@@ -14,7 +14,7 @@ p = re.compile(PATTERN)
 def main():
     parser = ArgumentParser(
         description=f'Deduplicates files matching "{PATTERN}".')
-    parser.add_argument("dir",
+    parser.add_argument("dir", nargs='?',
         help='The directory to search. Defaults to ".".', default='.')
     parser.add_argument('--dry-run', help='Do not actually delete any files.',
         action='store_true')
