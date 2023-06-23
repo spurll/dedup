@@ -16,30 +16,39 @@ def main():
         description=f'Deduplicates files matching "{PATTERN}".')
     parser.add_argument("dir", nargs='?',
         help='The directory to search. Defaults to ".".', default='.')
+    parser.add_argument('-r', '--recursive', help='Include subdirectories.',
+        action='store_true')
     parser.add_argument('--dry-run', help='Do not actually delete any files.',
         action='store_true')
     args = parser.parse_args()
 
+    process_dir(args.dir, args.recursive, args.dry_run)
+
+def process_dir(dir, recursive, dry_run):
     # List all files in the dir
-    files = os.listdir(args.dir)
+    print(f'Scanning {dir}...')
+    files = list(filter(lambda f: f.is_file(), os.scandir(dir)))
 
     # Filter to only those that match the pattern
-    files = list(filter(p.match, files))
+    files = list(filter(lambda f: p.match(f.name), files))
 
     while files:
-        keep, remove = next_batch(args.dir, files)
+        keep, remove = next_batch(dir, files)
 
-        print(f'Keeping {os.path.join(args.dir, keep)}!')
+        print(f'Keeping {keep.name}!')
 
         for f in remove:
-            file = os.path.join(args.dir, f)
-            print(f'Removing {file}...')
+            print(f'Removing {f.name}...')
 
-            if not args.dry_run:
-                os.remove(file)
+            if not dry_run:
+                os.remove(f.path)
 
         # Remove both keep and remove from the working list of files
         files = [f for f in files if f != keep and f not in remove]
+
+    if recursive:
+        for subdir in filter(lambda d: d.is_dir(), os.scandir(dir)):
+            process_dir(subdir.path, True, dry_run)
 
 
 def next_batch(dir, files):
@@ -47,12 +56,11 @@ def next_batch(dir, files):
     file = files[0]
 
     # Identify a group of files identical to the original file
-    group = list(filter(lambda f:
-        filecmp.cmp(os.path.join(dir, file), os.path.join(dir, f)), files))
+    group = list(filter(lambda f: filecmp.cmp(file.path, f.path), files))
 
     # Sort the list to ensure that the one we keep is the first, alphabetically
     # (and make sure IMG_1234.jpg sorts before IMG_1234 1.jpg!)
-    group.sort(key=lambda x: x.rsplit('.', 1)[0])
+    group.sort(key=lambda x: x.name.rsplit('.', 1)[0])
 
     return group[0], group[1:]
 
