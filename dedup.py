@@ -53,7 +53,7 @@ def process_dir(dir, verbose, recursive, dry_run):
 
     if recursive:
         for subdir in filter(lambda d: d.is_dir(), os.scandir(dir)):
-            process_dir(subdir.path, True, dry_run)
+            process_dir(subdir.path, verbose, True, dry_run)
 
 
 def next_batch(dir, files):
