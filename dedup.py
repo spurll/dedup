@@ -4,10 +4,10 @@
 
 
 from argparse import ArgumentParser
-import re, os
+import re, os, filecmp
 
 
-PATTERN = r'IMG_(\d{4}).*'
+PATTERN = r'(IMG_(\d{4}))|(\w{8}\-\w{4}\-\w{4}\-\w{4}\-\w{12}).*'
 p = re.compile(PATTERN)
 
 
@@ -46,20 +46,15 @@ def next_batch(dir, files):
     # Pick a file to keep
     file = files[0]
 
-    # Identify portion of name to match and target file size
-    group = p.match(file).group(1)
-    size = os.stat(os.path.join(dir, file)).st_size
-
-    # Search for files with a similar name and matching file size
-    remove = list(filter(lambda f: p.match(f).group(1) == group
-            and os.stat(os.path.join(dir, f)).st_size == size,
-        files))
+    # Identify a group of files identical to the original file
+    group = list(filter(lambda f:
+        filecmp.cmp(os.path.join(dir, file), os.path.join(dir, f)), files))
 
     # Sort the list to ensure that the one we keep is the first, alphabetically
     # (and make sure IMG_1234.jpg sorts before IMG_1234 1.jpg!)
-    remove.sort(key=lambda x: x.rsplit('.', 1)[0])
+    group.sort(key=lambda x: x.rsplit('.', 1)[0])
 
-    return remove[0], remove[1:]
+    return group[0], group[1:]
 
 
 if __name__ == "__main__":
