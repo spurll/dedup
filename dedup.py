@@ -16,17 +16,20 @@ def main():
         description=f'Deduplicates files matching "{PATTERN}".')
     parser.add_argument("dir", nargs='?',
         help='The directory to search. Defaults to ".".', default='.')
+    parser.add_argument('-v', '--verbose', help='Dump file info to console.',
+        action='store_true')
     parser.add_argument('-r', '--recursive', help='Include subdirectories.',
         action='store_true')
     parser.add_argument('--dry-run', help='Do not actually delete any files.',
         action='store_true')
     args = parser.parse_args()
 
-    process_dir(args.dir, args.recursive, args.dry_run)
+    process_dir(args.dir, args.verbose, args.recursive, args.dry_run)
 
-def process_dir(dir, recursive, dry_run):
+
+def process_dir(dir, verbose, recursive, dry_run):
     # List all files in the dir
-    print(f'Scanning {dir}...')
+    print(f'Scanning {dir} for duplicates...')
     files = list(filter(lambda f: f.is_file(), os.scandir(dir)))
 
     # Filter to only those that match the pattern
@@ -35,10 +38,12 @@ def process_dir(dir, recursive, dry_run):
     while files:
         keep, remove = next_batch(dir, files)
 
-        print(f'Keeping {keep.name}!')
+        if verbose:
+            print(f'Keeping {keep.name}!')
 
         for f in remove:
-            print(f'Removing {f.name}...')
+            if verbose:
+                print(f'Removing {f.name}...')
 
             if not dry_run:
                 os.remove(f.path)
